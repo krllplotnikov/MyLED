@@ -1,0 +1,3 @@
+[submodule "main/libraries/AddressStrip"]
+	path = main/libraries/AddressStrip
+	url = https://github.com/krllplotnikov-libraries/AddressStrip.git
