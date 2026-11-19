@@ -5,8 +5,10 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/queue.h"
 
 #include "Periphery.h"
+#include "AudioProcess.h"
 
 #include "AddressStrip.h"
 #include "Settings.h"
@@ -27,22 +29,54 @@ AddressStrip_st addressStrip = {0};
 
 uint32_t settingsChangeTime = 0;
 
+_Static_assert(AUDIO_PROCESS_BANDS_COUNT == ADDRESS_STRIP_COLOR_MUSIC_BANDS, "AudioProcess and AddressStrip band count mismatch");
+
+typedef struct{
+	float bands[AUDIO_PROCESS_BANDS_COUNT];
+}AudioFrame_st;
+
+// Last frame of band levels: Microphone_Task -> AddressStrip_Task (length 1, overwritten)
+static QueueHandle_t audioFrameQueue = NULL;
+
 void AddressStrip_Task(){
+	AudioFrame_st frame;
 	while (1) {
+		// AddressStrip_UpdateColorMusicBands must be called from the same context as AddressStrip_Run
+		if(xQueueReceive(audioFrameQueue, &frame, 0) == pdTRUE){
+			AddressStrip_UpdateColorMusicBands(&addressStrip, frame.bands);
+		}
 		AddressStrip_Run(&addressStrip);
 		vTaskDelay(pdMS_TO_TICKS(1));
 	}
 }
 
 void Microphone_Task(){
+	static int16_t samples[NUM_SAMPLES];
+	AudioFrame_st frame;
+	uint8_t active = 0;
+
 	while (1) {
-		if(AddressStrip_IsColorMusicReady(&addressStrip)){
-			int16_t *pBuf = NULL;
-    		size_t bytes = 0;
-    		pBuf = I2S_Read(&bytes);
-    		AddressStrip_UpdateColorMusicSignal(&addressStrip, pBuf);
+		// I2S is read all the time, so the DMA buffers always hold fresh samples
+		size_t count = I2S_Read(samples, NUM_SAMPLES);
+		if(count == 0){
+			vTaskDelay(1);
+			continue;
 		}
-		vTaskDelay(pdMS_TO_TICKS(1));
+
+		uint8_t colorMusic = addressStrip.state == ADDRESS_STRIP_STATE_ON && addressStrip.mode == ADDRESS_STRIP_MODE_COLOR_MUSIC;
+		if(!colorMusic){
+			active = 0;
+			continue;
+		}
+		if(!active){
+			AudioProcess_Reset();   // start normalization from scratch after a pause
+			active = 1;
+		}
+
+		if(AudioProcess_AddSamples(samples, count)){
+			AudioProcess_GetBands(frame.bands);
+			xQueueOverwrite(audioFrameQueue, &frame);
+		}
 	}
 }
 
@@ -60,6 +94,9 @@ void app_main(void) {
   RMT_Init();
   I2S_Init();
   NVS_Init();
+
+  AudioProcess_Init(SAMPLE_RATE);
+  audioFrameQueue = xQueueCreate(1, sizeof(AudioFrame_st));
 
   Settings_Init();
   BLEServer_Init("LED");
@@ -86,7 +123,7 @@ void app_main(void) {
   AddressStrip_SetMode(&addressStrip, Settings_GetMode());
   
   xTaskCreate(AddressStrip_Task, NULL, 8192, NULL, 20, NULL);
-  xTaskCreate(Microphone_Task, NULL, 4096, NULL, 0, NULL);
+  xTaskCreate(Microphone_Task, NULL, 4096, NULL, 1, NULL);
   xTaskCreate(Settings_Task, NULL, 4096, NULL, 0, NULL);
 }
 

@@ -5,17 +5,18 @@ idf_component_register(
     "./libraries/AddressStrip/src/WS2812B.c"
     "./libraries/AddressStrip/src/WS2812B_Utils.c"
     "./libraries/AddressStrip/src/AddressStrip.c"
-    "./libraries/AddressStrip/FFT/src/FFT.c"
+    "./libraries/FFT/src/FFT.c"
 
     "./modules/Periphery.c"
     "./modules/SPIFFS.c"
     "./modules/Settings.c"
     "./modules/BLEServer.c"
+    "./modules/AudioProcess.c"
     
     INCLUDE_DIRS 
     "."
     "./libraries/AddressStrip/src/"
-    "./libraries/AddressStrip/FFT/src/"
+    "./libraries/FFT/src/"
     "./modules/"
     
     PRIV_REQUIRES

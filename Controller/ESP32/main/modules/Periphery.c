@@ -8,8 +8,6 @@
 #define I2S_SCK_GPIO_NUM 4
 #define I2S_PORT I2S_NUM_0
 
-int16_t i2sBuffer[NUM_SAMPLES];
-
 rmt_encoder_handle_t simple_encoder = NULL;
 rmt_channel_handle_t led_chan = NULL;
 
@@ -133,11 +131,12 @@ void RMT_Transmit(void* payload, size_t payloadBytes){
     rmt_tx_wait_all_done(led_chan, 100);
 }
 
-int16_t* I2S_Read(size_t* bytesRead){
-	esp_err_t result = i2s_read(I2S_PORT, &i2sBuffer, NUM_SAMPLES, bytesRead, portMAX_DELAY);
-	if (result == ESP_OK)
+size_t I2S_Read(int16_t* buffer, size_t samples){
+	size_t bytesRead = 0;
+	esp_err_t result = i2s_read(I2S_PORT, buffer, samples * sizeof(int16_t), &bytesRead, portMAX_DELAY);
+	if (result != ESP_OK)
 	{
-		return i2sBuffer;
+		return 0;
 	}
-	return NULL;
+	return bytesRead / sizeof(int16_t);
 }
