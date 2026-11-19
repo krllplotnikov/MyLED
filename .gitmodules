@@ -1,3 +1,7 @@
 [submodule "Controller/ESP32/main/libraries/FFT"]
 	path = Controller/ESP32/main/libraries/FFT
 	url = https://github.com/krllplotnikov-libraries/FFT.git
+[submodule "Controller/ESP32/main/libraries/AddressStrip"]
+	path = Controller/ESP32/main/libraries/AddressStrip
+	url = https://github.com/krllplotnikov-libraries/AddressStrip.git
+	branch = remove_fft
