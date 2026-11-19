@@ -1,0 +1,3 @@
+[submodule "Controller/ESP32/main/libraries/FFT"]
+	path = Controller/ESP32/main/libraries/FFT
+	url = https://github.com/krllplotnikov-libraries/FFT.git
