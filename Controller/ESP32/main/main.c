@@ -36,13 +36,10 @@ void AddressStrip_Task(){
 
 void Microphone_Task(){
 	while (1) {
-		if(AddressStrip_IsColorMusicReady(&addressStrip)){
-			int16_t *pBuf = NULL;
-    		size_t bytes = 0;
-    		pBuf = I2S_Read(&bytes);
-    		AddressStrip_UpdateColorMusicSignal(&addressStrip, pBuf);
-		}
-		vTaskDelay(pdMS_TO_TICKS(1));
+		int16_t *pBuf = NULL;
+		size_t bytes = 0;
+		pBuf = I2S_Read(&bytes);
+		vTaskDelay(pdMS_TO_TICKS(10));
 	}
 }
 
